@@ -131,4 +131,7 @@ module adpll_digital_top #(
         .clk_out (fb_clk)
     );
 
+    // Suppress unused input warning when internal DCO is active
+    wire _unused_top = &{dco_clk_in, 1'b0};
+
 endmodule

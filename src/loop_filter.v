@@ -133,7 +133,8 @@ module loop_filter #(
     // rather than resetting to zero on jitter.
     reg signed [OTW_WIDTH-1:0] freq_err;
     reg [3:0]                  good_windows;
-    wire                       match = (diff_latched >= WINDOW - 1) && (diff_latched <= WINDOW + 1);
+    localparam signed [8:0]    WIN_TARGET = WINDOW[8:0];
+    wire                       match = (diff_latched >= WIN_TARGET - 9'sd1) && (diff_latched <= WIN_TARGET + 9'sd1);
 
     always @(posedge ref_clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -141,7 +142,7 @@ module loop_filter #(
             good_windows <= 4'd0;
             freq_locked  <= 1'b0;
         end else if (window_done) begin
-            freq_err <= $signed({1'b0, WINDOW}) - diff_latched;
+            freq_err <= $signed(WINDOW[OTW_WIDTH-1:0]) - $signed(diff_latched);
             if (match) begin
                 if (good_windows < LOCK_WINDOWS)
                     good_windows <= good_windows + 1'b1;

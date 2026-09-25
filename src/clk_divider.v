@@ -53,13 +53,13 @@ module clk_divider #(
 );
 
     reg [CNT_WIDTH-1:0] cnt;
-    localparam integer HALF = (N/2 < 1) ? 1 : N/2;
+    localparam [CNT_WIDTH-1:0] HALF_LIMIT = ((N/2 < 1) ? 1'b0 : (N[CNT_WIDTH-1:0]/2 - 1'b1));
 
     always @(posedge clk_in or negedge rst_n) begin
         if (!rst_n) begin
             cnt     <= {CNT_WIDTH{1'b0}};
             clk_out <= 1'b0;
-        end else if (cnt == HALF - 1) begin
+        end else if (cnt == HALF_LIMIT) begin
             cnt     <= {CNT_WIDTH{1'b0}};
             clk_out <= ~clk_out;
         end else begin

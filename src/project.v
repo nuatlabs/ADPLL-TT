@@ -4,6 +4,7 @@
  */
 
 `default_nettype none
+`timescale 1ps/1fs
 
 module tt_um_nuatlabs_adpll (
     input  wire [7:0] ui_in,    // Dedicated inputs: [7:0] = optional coarse otw_init override
@@ -59,6 +60,6 @@ module tt_um_nuatlabs_adpll (
     assign uio_oe[7:0]  = 8'hFF;       // Set all 8 bidirectional pins as outputs
 
     // Suppress unused warnings
-    wire _unused = &{uio_in, 1'b0};
+    wire _unused = &{uio_in, otw[3:0], 1'b0};
 
 endmodule

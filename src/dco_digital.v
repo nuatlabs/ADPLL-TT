@@ -5,89 +5,109 @@
 // Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
 // License:      Apache-2.0 / MIT
 // ============================================================================
-// Synthesizable Digitally Controlled Oscillator (DCO) Component.
-// Scaled for the 180 nm CMOS standard-cell node (C2S eChip Hub initiative).
+// Digitally Controlled Oscillator (DCO) Component.
+// Scaled for 180nm CMOS node (C2S eChip Hub initiative / IHP 130nm TT flow).
 //
-// ----------------------------------------------------------------------------
-// 1. WHY SCALED FOR 180 nm?
-// ----------------------------------------------------------------------------
-// In standard 180nm CMOS (e.g., SCL 180nm from MeitY C2S eChip Hub):
-// - An inverter gate delay (FO4) is approximately 80 ps - 120 ps.
-// - A standard-cell D-flip-flop has a setup + clock-to-Q delay of ~0.8 ns - 1.2 ns.
-// - Synthesizing a 1.0 GHz clock (1.0 ns period) with standard cells in 180nm
-//   is physically infeasible because one clock period barely covers a single
-//   flip-flop delay.
-// - Scaling to 100 MHz (Period = 10.0 ns = 10,000 ps) allows reliable standard-cell
-//   synthesis, place-and-route, and timing closure with positive slack on SCL 180nm.
+// Features:
+// 1. Physical ASIC Synthesis (`ifdef SYNTHESIS`):
+//    Fully synthesizable standard-cell tapped ring oscillator with gate-level
+//    synthesis attributes (* keep = "true", dont_touch = "true" *).
+//    Free of non-synthesizable constructs (no real types, no # delays).
 //
-// ----------------------------------------------------------------------------
-// 2. SCALED PARAMETERS
-// ----------------------------------------------------------------------------
-// - Center Period:  T_CENTER_PS     = 10000.0 ps (10.0 ns -> 100 MHz)
-// - Center Code:    OTW_CENTER      = 32768 (midpoint of 16-bit word)
-// - Sensitivity:    GAIN_PS_PER_LSB = 0.2 ps/LSB (scaled 10x for 100 MHz)
-//
-// Frequency Range:
-// - At OTW = 32768: Period = 10000.0 ps -> Freq = 100 MHz.
-// - At OTW = 28000: Period = 10953.6 ps -> Freq = 91.3 MHz.
-// - At OTW = 40000: Period =  8553.6 ps -> Freq = 116.9 MHz.
+// 2. High-Precision Behavioral Simulation (`else`):
+//    Digital-to-period transfer function modeled in 0.1 ps integer units.
+//    Center Period = 10,000 ps = 10.0 ns (100 MHz).
+//    Sensitivity   = 0.2 ps/LSB (scaled 10x for 100 MHz target).
 // ============================================================================
 
 `timescale 1ps/1fs
 
 module dco_digital #(
-    parameter OTW_WIDTH       = 16,
-    parameter integer OTW_CENTER   = 32768,   // Center code producing 100 MHz
-    parameter real    T_CENTER_PS  = 10000.0, // Center period in ps (10,000 ps = 100 MHz)
-    parameter real    GAIN_PS_PER_LSB = 0.2   // Sensitivity: 0.2 ps period change per LSB
+    parameter integer OTW_WIDTH  = 16,
+    parameter integer OTW_CENTER = 32768
 ) (
     input  wire                 rst_n,   // Active-low asynchronous reset / enable
     input  wire [OTW_WIDTH-1:0] otw,     // Oscillator Tuning Word from loop filter
     output wire                 clk_out  // Generated high-speed DCO clock (100 MHz)
 );
 
+`ifdef SYNTHESIS
     // ------------------------------------------------------------------------
-    // Instantaneous Period Computation (Digital-to-Period Transfer Function)
+    // Physical Silicon Implementation: Synthesizable Tapped Ring Oscillator
     // ------------------------------------------------------------------------
-    real current_period_ps;
-    real half_period_ps;
+    // Odd number of inverting stages with an active-low reset NAND gate.
+    // keep="true" and dont_touch="true" prevent Yosys and ABC optimizer from
+    // optimizing away or simplifying the combinational feedback loop.
+    localparam integer NUM_STAGES = 31;
+    (* keep = "true", dont_touch = "true" *) wire [NUM_STAGES-1:0] chain;
+    (* keep = "true", dont_touch = "true" *) wire feedback_tap;
+
+    // Stage 0: Active-low reset NAND gate (starts oscillation when rst_n = 1)
+    assign chain[0] = ~(rst_n & feedback_tap);
+
+    // Inverter delay chain
+    genvar k;
+    generate
+        for (k = 1; k < NUM_STAGES; k = k + 1) begin : gen_ring_inv
+            assign chain[k] = ~chain[k-1];
+        end
+    endgenerate
+
+    // Delay tap multiplexer controlled by upper bits of OTW:
+    reg tap_sel;
+    always @(*) begin
+        case (otw[15:13])
+            3'd0:    tap_sel = chain[15];
+            3'd1:    tap_sel = chain[17];
+            3'd2:    tap_sel = chain[19];
+            3'd3:    tap_sel = chain[21];
+            3'd4:    tap_sel = chain[23];
+            3'd5:    tap_sel = chain[25];
+            3'd6:    tap_sel = chain[27];
+            default: tap_sel = chain[29];
+        endcase
+    end
+
+    assign feedback_tap = tap_sel;
+    assign clk_out      = chain[0];
+
+    // Suppress unused signal warnings for lower OTW bits during synthesis
+    wire _unused_otw = &{otw[12:0], 1'b0};
+
+`else
+    // ------------------------------------------------------------------------
+    // High-Precision Behavioral Simulation Model (Icarus / Cocotb / Verilator)
+    // ------------------------------------------------------------------------
+    // Modeled in units of 0.1 ps (100 fs).
+    // Center half-period: 5,000.0 ps = 50,000 units of 0.1 ps.
+    // Gain: 0.2 ps/LSB period -> 0.1 ps/LSB half-period (1 unit per LSB).
+    reg signed [31:0] half_period_x10;
+    reg               osc_node;
 
     always @(otw or rst_n) begin
         if (!rst_n) begin
-            current_period_ps = T_CENTER_PS;
-            half_period_ps    = T_CENTER_PS / 2.0;
+            half_period_x10 = 32'sd50000;
         end else begin
-            // Linear digital-to-frequency mapping:
             // Higher OTW -> shorter period -> higher frequency
-            current_period_ps = T_CENTER_PS - (($signed({1'b0, otw}) - OTW_CENTER) * GAIN_PS_PER_LSB);
+            half_period_x10 = 32'sd50000 - ($signed({1'b0, otw}) - 32'sd32768);
 
-            // Physical safety clamp: prevent sub-nanosecond periods on 180nm
-            if (current_period_ps < 500.0)
-                current_period_ps = 500.0;
-
-            half_period_ps = current_period_ps / 2.0;
+            // Safety clamp: minimum half-period 500 ps (5,000 * 0.1 ps)
+            if (half_period_x10 < 32'sd5000)
+                half_period_x10 = 32'sd5000;
         end
     end
-
-    // ------------------------------------------------------------------------
-    // Gated Oscillation Core
-    // ------------------------------------------------------------------------
-    // Synthesis attributes to preserve internal node across synthesis tool passes
-    (* keep = "true", dont_touch = "true" *) reg osc_node;
 
     initial begin
         osc_node = 1'b0;
     end
 
-    // Gated oscillation loop:
-    // When rst_n is 0: oscillation is disabled (output held low).
-    // When rst_n is 1: toggles every half_period_ps.
+    // Gated oscillation loop
     always begin
         if (!rst_n) begin
             osc_node = 1'b0;
             @(posedge rst_n);
         end else begin
-            #(half_period_ps);
+            #(half_period_x10 / 10.0);
             if (rst_n)
                 osc_node = ~osc_node;
             else
@@ -95,7 +115,8 @@ module dco_digital #(
         end
     end
 
-    // Output clock driver
     assign clk_out = osc_node;
+
+`endif
 
 endmodule
