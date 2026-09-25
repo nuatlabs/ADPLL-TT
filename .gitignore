@@ -3,6 +3,9 @@
 *.vcd
 *.fst
 *.fst.hier
+*.out
+*.vvp
+synth_output.v
 runs
 tt_submission
 src/user_config.json

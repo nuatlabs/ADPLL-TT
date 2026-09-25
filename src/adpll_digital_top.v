@@ -1,0 +1,137 @@
+// ============================================================================
+// File: adpll_digital_top.v
+// Module: adpll_digital_top
+// Project: All-Digital Phase-Locked Loop (ADPLL) - SCL 180nm C2S Node
+//
+// DESCRIPTION:
+// Top-level All-Digital Phase-Locked Loop (ADPLL) architecture.
+// Scaled for the 180 nm CMOS standard-cell node (C2S eChip Hub initiative).
+//
+// ----------------------------------------------------------------------------
+// 1. ARCHITECTURAL OVERVIEW (180 nm SCL NODE)
+// ----------------------------------------------------------------------------
+// This module integrates the complete ADPLL feedback loop:
+//
+//   ref_clk --->+----------+      +-------------+      +-------------+
+//   (12.5 MHz)  |   BBPD   |----->| Loop Filter |----->|  DCO Core   |---+--> clk_out
+//   fb_clk  --->| (bbpd.v) |up_dn |(loop_filter)| OTW  |(dco_digital)|   |  (100 MHz)
+//               +----------+      +-------------+      +-------------+   |
+//                    ^                                                   |
+//                    |                    +---------------+              |
+//                    +--------------------|  /N Divider   |<-------------+
+//                      fb_clk (12.5 MHz)  | (clk_divider) |
+//                                         +---------------+
+//
+// ----------------------------------------------------------------------------
+// 2. CONFIGURABLE DCO INTEGRATION MODES
+// ----------------------------------------------------------------------------
+// Parameter: USE_INTERNAL_DCO
+//
+// - USE_INTERNAL_DCO = 1 (Default: Fully Self-Contained All-Digital PLL):
+//   Instantiates dco_digital internally. The module generates its own 100 MHz
+//   clock on clk_out. No external oscillator is required.
+//
+// - USE_INTERNAL_DCO = 0 (ASIC Hard-Macro Partitioning Mode):
+//   Excludes the internal DCO logic. The tuning word is exported via port otw
+//   to an external analog/mixed-signal custom DCO hard macro, and the returning
+//   clock is received on port dco_clk_in.
+//
+// ----------------------------------------------------------------------------
+// 3. KEY METRICS & FORMULAS (180 nm C2S SCALED)
+// ----------------------------------------------------------------------------
+// - Reference Clock:        F_REF = 12.5 MHz (T_REF = 80.0 ns = 80,000 ps)
+// - Output Frequency:       F_DCO = N * F_REF = 8 * 12.5 MHz = 100 MHz
+// - Output Period:          T_DCO = T_REF / N = 80,000 ps / 8 = 10,000 ps (10.0 ns)
+// - Tuning Word Relation:   T_period = 10,000 ps - ( (OTW - 32768) * 0.2 ps )
+// ============================================================================
+
+`timescale 1ps/1fs
+
+module adpll_digital_top #(
+    parameter OTW_WIDTH        = 16, // Bit-width of the Oscillator Tuning Word
+    parameter integer N        = 8,  // Feedback multiplication ratio: F_DCO = N * F_REF
+    parameter KP               = 10, // Proportional gain for fine tracking
+    parameter KI               = 2,  // Integral gain for fine tracking
+    parameter USE_INTERNAL_DCO = 1   // 1 = Synthesizable internal DCO, 0 = External macro
+) (
+    input  wire                 ref_clk,     // Golden reference clock (e.g., 125 MHz)
+    input  wire                 rst_n,       // Active-low asynchronous system reset
+    input  wire                 dco_clk_in,  // External DCO clock input (used if USE_INTERNAL_DCO = 0)
+    input  wire [OTW_WIDTH-1:0] otw_init,    // Initial tuning word supplied on reset
+    output wire [OTW_WIDTH-1:0] otw,         // Current tuning word (for debug or external DCO)
+    output wire                 clk_out,     // PLL high-speed output clock (1.0 GHz)
+    output wire                 freq_locked, // 1 = Frequency acquisition complete, PI active
+    output wire                 fb_clk       // Feedback clock divided by N (phase-locked to ref_clk)
+);
+
+    // Internal interconnects
+    wire up_dn;
+    wire dco_clk_internal;
+    wire dco_active_clk;
+
+    // ------------------------------------------------------------------------
+    // Sub-Module 1: Bang-Bang Phase Detector (BBPD)
+    // ------------------------------------------------------------------------
+    // Samples ~fb_clk on posedge ref_clk to generate a 1-bit early/late decision
+    bbpd u_bbpd (
+        .ref_clk (ref_clk),
+        .rst_n   (rst_n),
+        .fb_clk  (fb_clk),
+        .up_dn   (up_dn)
+    );
+
+    // ------------------------------------------------------------------------
+    // Sub-Module 2: Dual-Stage Digital Loop Filter
+    // ------------------------------------------------------------------------
+    // Stage 1 (AFC): Counts fb_clk edges over a 200-cycle ref_clk window to correct
+    //                large initial frequency offsets without phase-aliasing.
+    // Stage 2 (PI):  Proportional-Integral tracking on up_dn for zero phase error.
+    loop_filter #(
+        .OTW_WIDTH (OTW_WIDTH),
+        .KP        (KP),
+        .KI        (KI)
+    ) u_loop_filter (
+        .ref_clk     (ref_clk),
+        .rst_n       (rst_n),
+        .up_dn       (up_dn),
+        .fb_clk      (fb_clk),
+        .otw_init    (otw_init),
+        .otw         (otw),
+        .freq_locked (freq_locked)
+    );
+
+    // ------------------------------------------------------------------------
+    // Sub-Module 3: Digitally Controlled Oscillator (DCO)
+    // ------------------------------------------------------------------------
+    generate
+        if (USE_INTERNAL_DCO) begin : gen_internal_dco
+            dco_digital #(
+                .OTW_WIDTH (OTW_WIDTH)
+            ) u_dco (
+                .rst_n   (rst_n),
+                .otw     (otw),
+                .clk_out (dco_clk_internal)
+            );
+            assign dco_active_clk = dco_clk_internal;
+        end else begin : gen_external_dco
+            assign dco_clk_internal = 1'b0;
+            assign dco_active_clk   = dco_clk_in;
+        end
+    endgenerate
+
+    // Drive primary PLL high-speed clock output
+    assign clk_out = dco_active_clk;
+
+    // ------------------------------------------------------------------------
+    // Sub-Module 4: Programmable Integer Feedback Divider (/N)
+    // ------------------------------------------------------------------------
+    // Divides high-speed DCO clock down to ref_clk frequency with 50% duty cycle
+    clk_divider #(
+        .N (N)
+    ) u_div (
+        .clk_in  (dco_active_clk),
+        .rst_n   (rst_n),
+        .clk_out (fb_clk)
+    );
+
+endmodule

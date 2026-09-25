@@ -1,0 +1,57 @@
+# ==============================================================================
+# File: synth.ys
+# Project: All-Digital Phase-Locked Loop (ADPLL)
+# Tool: Yosys Open-Source Synthesis Suite
+# Description: Synthesis script for adpll_digital_top
+# ==============================================================================
+
+# Read Verilog source files
+read_verilog -sv bbpd.v
+read_verilog -sv clk_divider.v
+read_verilog -sv loop_filter.v
+read_verilog -sv dco_digital.v
+read_verilog -sv adpll_digital_top.v
+
+# Set top-level module
+hierarchy -check -top adpll_digital_top
+
+# Elaborate AST and translate high-level constructs
+proc
+
+# Flatten and preserve specified attributes (* keep *)
+flatten
+opt_expr
+opt_clean
+check
+
+# Technology-independent optimization
+opt -nodffe -nosdff
+fsm
+opt
+wreduce
+peepopt
+opt_clean
+share
+opt
+
+# Memory mapping
+memory
+opt
+
+# Technology mapping to standard gates
+techmap
+opt
+
+# Map flip-flops and latches
+dfflegalize -cell $_DFF_P_ 01
+opt
+
+# Map logic to generic gate library (NAND, NOR, AND, OR, NOT, MUX)
+abc -g cmos2
+opt_clean
+
+# Print synthesis statistics
+stat
+
+# Write synthesized gate-level netlist
+write_verilog -noattr synth_output.v

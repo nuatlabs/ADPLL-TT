@@ -4,9 +4,8 @@
 # defaults
 SIM ?= icarus
 FST ?= -fst # Use more efficient FST format
-TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v
+PROJECT_SOURCES = project.v adpll_digital_top.v bbpd.v clk_divider.v loop_filter.v dco_digital.v
 
 ifneq ($(GATES),yes)
 
