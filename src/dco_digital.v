@@ -78,37 +78,40 @@ module dco_digital #(
     // ------------------------------------------------------------------------
     // High-Precision Behavioral Simulation Model (Icarus / Cocotb / Verilator)
     // ------------------------------------------------------------------------
-    // Modeled in units of 0.1 ps (100 fs).
-    // Center half-period: 5,000.0 ps = 50,000 units of 0.1 ps.
-    // Gain: 0.2 ps/LSB period -> 0.1 ps/LSB half-period (1 unit per LSB).
-    reg signed [31:0] half_period_x10;
+    // Explicitly initialized to 5,000 ps half-period (100.0 MHz).
+    // Sensitivity: ~0.2 ps/LSB period -> ~0.1 ps/LSB half-period.
+    reg signed [31:0] half_period_ps;
     reg               osc_node;
 
-    always @(otw or rst_n) begin
-        if (!rst_n) begin
-            half_period_x10 = 32'sd50000;
-        end else begin
-            // Higher OTW -> shorter period -> higher frequency
-            half_period_x10 = 32'sd50000 - ($signed({1'b0, otw}) - 32'sd32768);
-
-            // Safety clamp: minimum half-period 500 ps (5,000 * 0.1 ps)
-            if (half_period_x10 < 32'sd5000)
-                half_period_x10 = 32'sd5000;
-        end
+    initial begin
+        half_period_ps = 32'sd5000;
+        osc_node       = 1'b0;
     end
 
-    initial begin
-        osc_node = 1'b0;
+    always @(otw or rst_n) begin
+        if (rst_n !== 1'b1) begin
+            half_period_ps = 32'sd5000;
+        end else begin
+            // Center code = 32768 -> 5,000 ps half-period (100 MHz)
+            // 1 ps step per 10 LSBs
+            half_period_ps = 32'sd5000 - (($signed({1'b0, otw}) - 32'sd32768) / 10);
+
+            // Safety clamps: between 1,000 ps (500 MHz) and 15,000 ps (33.3 MHz)
+            if (half_period_ps < 32'sd1000)
+                half_period_ps = 32'sd1000;
+            if (half_period_ps > 32'sd15000)
+                half_period_ps = 32'sd15000;
+        end
     end
 
     // Gated oscillation loop
     always begin
-        if (!rst_n) begin
+        if (rst_n !== 1'b1) begin
             osc_node = 1'b0;
             @(posedge rst_n);
         end else begin
-            #(half_period_x10 / 10.0);
-            if (rst_n)
+            #(half_period_ps);
+            if (rst_n === 1'b1)
                 osc_node = ~osc_node;
             else
                 osc_node = 1'b0;
