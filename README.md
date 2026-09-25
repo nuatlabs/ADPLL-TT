@@ -19,15 +19,47 @@ A high-performance, synthesizable **All-Digital Phase-Locked Loop (ADPLL)** sili
 ## 1. Architectural Highlights
 
 ```
-                    +--------+     +-------------+      +--------------+
- ref_clk (12.5M) -> |        |     |             |      |              |
-                    |  BBPD  |---->| Loop Filter |----->|   DCO Core   |---+--> clk_out (100 MHz)
- fb_clk  (12.5M) -> |        |up_dn|  (AFC + PI) | OTW  | (dco_digital)|   |
-                    +--------+     +-------------+      +--------------+   |
-                         ^                                                 |
-                         |                   +---------------+             |
-                         +-------------------|  /8 Divider   |<------------+
-                           fb_clk (12.5 MHz) +---------------+
+                                        +-----------------------------------------------------+
+                                        |               DUAL-STAGE LOOP FILTER                |
+                                        |                                                     |
+                 +--------------------->|  STAGE 1: AFC Coarse Frequency Acquisition          |
+                 |                      |  - Edge counter clocked on fb_clk (fb_edge_cnt)     |
+                 |                      |  - Window counter clocked on ref_clk (WINDOW=200)   |
+                 |                      |  - freq_err = WINDOW - diff_latched                 |
+                 |                      |  - Generates coarse jumps: otw += freq_err * KFREQ  |
+                 |                      |                       |                             |
+                 |                      |                       v (handoff: freq_locked = 1)  |
+                 |                      |                       |                             |
+                 | up_dn (1-bit phase)  |  STAGE 2: Bang-Bang PI Fine Tracking Loop           |
+                 | +--------------------|  - Proportional lead: fine_err = +/- KP             |
+                 | |                    |  - Integral lag:     integrator += +/- KI           |
+                 | |                    |  - otw = otw_base + integrator + fine_err           |
+                 | |                    +-----------------------------------------------------+
+                 | |                                               |
+                 | |                                               | otw[15:0] (16-bit word)
+                 | |                                               v
+   ref_clk ----->+-+--------+                      +---------------------------------------+
+   (12.5 MHz)    |   BBPD   |                      |           DIGITAL DCO CORE            |
+                 | (bbpd.v) |                      |                                       |
+                 |          |                      |  Coarse Bank: otw[15:13] (3-bit)       |
+                 +----------+                      |  - 31-stage tapped delay line MUX     |
+                       ^                           |                                       |
+                       |                           |  Fine Bank:   otw[12:0] (13-bit)      |
+                       |                           |  - Varactor / fine delay steps        |
+                       |                           +---------------------------------------+
+                       |                                               |
+                       |                                               | clk_out (100 MHz)
+                       |                                               v
+                       |                                           +---+-------------------> clk_out (100 MHz)
+                       |                                           |
+                       |                               +-----------+---+
+                       |                               |  /N Divider   |
+                       |                               | (clk_divider) |
+                       |                               +-----------+---+
+                       |                                           |
+                       +-------------------------------------------+-----------------------> fb_clk  (12.5 MHz)
+                                                fb_clk (12.5 MHz)
+                                     (Enters BOTH BBPD & Loop Filter Stage 1)
 ```
 
 The **NUAT-ADPLL** implements a robust **two-stage frequency acquisition and phase-tracking architecture**:
