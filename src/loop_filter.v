@@ -169,14 +169,21 @@ module loop_filter #(
     reg signed [OTW_WIDTH-1:0] integrator;
     reg        [OTW_WIDTH-1:0] otw_base;
     reg                        freq_locked_d;
+    reg                        initialized;
     wire signed [OTW_WIDTH-1:0] fine_error = up_dn ? KP : -KP;
 
     always @(posedge ref_clk or negedge rst_n) begin
         if (!rst_n) begin
             integrator    <= {OTW_WIDTH{1'b0}};
+            otw           <= {OTW_WIDTH{1'b0}};
+            otw_base      <= {OTW_WIDTH{1'b0}};
+            freq_locked_d <= 1'b0;
+            initialized   <= 1'b0;
+        end else if (!initialized) begin
+            // Synchronously load the initial tuning word on the first active clock cycle
             otw           <= otw_init;
             otw_base      <= otw_init;
-            freq_locked_d <= 1'b0;
+            initialized   <= 1'b1;
         end else begin
             freq_locked_d <= freq_locked;
             if (!freq_locked) begin
