@@ -56,13 +56,13 @@ module adpll_digital_top #(
     input  wire                 dco_clk_in,  // External DCO clock input (used if USE_INTERNAL_DCO = 0)
     input  wire [OTW_WIDTH-1:0] otw_init,    // Initial tuning word supplied on reset
     output wire [OTW_WIDTH-1:0] otw,         // Current tuning word (for debug or external DCO)
-    output wire                 clk_out,     // PLL high-speed output clock (1.0 GHz)
+    output wire                 clk_out,     // PLL high-speed output clock (100 MHz)
     output wire                 freq_locked, // 1 = Frequency acquisition complete, PI active
+    output wire                 up_dn,       // 1-bit Bang-Bang phase detector sign decision
     output wire                 fb_clk       // Feedback clock divided by N (phase-locked to ref_clk)
 );
 
     // Internal interconnects
-    wire up_dn;
     wire dco_clk_internal;
     wire dco_active_clk;
 

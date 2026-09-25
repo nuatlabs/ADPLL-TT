@@ -40,6 +40,7 @@ module tb_adpll_digital;
         .otw         (otw),
         .clk_out     (clk_out),
         .freq_locked (freq_locked),
+        .up_dn       (),
         .fb_clk      (fb_clk)
     );
 

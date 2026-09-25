@@ -43,6 +43,7 @@ module tt_um_nuatlabs_adpll (
         .otw         (otw),
         .clk_out     (clk_out),
         .freq_locked (freq_locked),
+        .up_dn       (up_dn),
         .fb_clk      (fb_clk)
     );
 
@@ -50,7 +51,7 @@ module tt_um_nuatlabs_adpll (
     assign uo_out[0]   = clk_out;      // Primary 100 MHz locked output clock
     assign uo_out[1]   = fb_clk;       // Divided 12.5 MHz feedback clock
     assign uo_out[2]   = freq_locked;  // 1 when frequency acquisition has achieved lock
-    assign uo_out[3]   = u_adpll.up_dn;// 1-bit Bang-Bang Phase Detector output
+    assign uo_out[3]   = up_dn;        // 1-bit Bang-Bang Phase Detector output
     assign uo_out[7:4] = otw[15:12];   // Top 4 MSBs of the Oscillator Tuning Word
 
     // Bidirectional IOs: configured as active outputs to expose OTW bits [11:4]
