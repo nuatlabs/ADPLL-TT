@@ -9,47 +9,57 @@
 // ----------------------------------------------------------------------------
 // Comprehensive All-Digital Phase-Locked Loop (ADPLL) Architecture:
 //
-//                 +-------------------------------------------------------------+
-//                 |               DUAL-STAGE DIGITAL LOOP FILTER                |
-//                 |                                                             |
-//                 |  [STAGE 1: AFC Coarse Frequency Acquisition]                |
-//   fb_clk ------>|  * Counts fb_clk edges over 200 ref_clk window              |
-//  (12.5 MHz)     |  * Computes freq_err = 200 - diff_latched                   |
-//                 |  * Applies coarse jumps: otw <= otw + (freq_err * 50)       |
-//                 |                             |                               |
-//                 |                             v (Handoff when |freq_err| <= 1)|
-//                 |                             |                               |
-//                 |  [STAGE 2: Bang-Bang PI Fine Tracking Loop]                 |
-//   up_dn ------->|  * Proportional lead: fine_err = (up_dn ? +KP : -KP)        |
-//  (from BBPD)    |  * Integral lag:     integrator <= integrator +/- KI        |
-//                 |  * Locked tuning:    otw <= otw_base + integrator + fine_err|
-//                 +-------------------------------------------------------------+
-//                                               |
-//                                               | otw[15:0] (16-bit Tuning Word)
-//                                               v
-//   ref_clk ---->+--------------+  +--------------------------------------------+
-//  (12.5 MHz)    |     BBPD     |  |      DIGITALLY CONTROLLED OSCILLATOR       |
-//                |   (bbpd.v)   |  |                                            |
-//   fb_clk ----->|              |  |  * Coarse Bank (otw[15:13]): 31-tap inv MUX|
-//  (12.5 MHz)    | Samples      |  |  * Fine Bank   (otw[12:0]): 0.1 ps varactor|
-//                | ~fb_clk on   |  +--------------------------------------------+
-//                | ref_clk edge |                       |
-//                +--------------+                       | clk_out (100 MHz Locked)
-//                       |                               v
-//                       +--- up_dn ----------------> [ Primary Output: clk_out ]
-//                            (to Stage 2 Filter)        |
-//                                                       v
-//                                                 +-------------+
-//                                                 | /8 Divider  |
-//                                                 |(clk_divider)|
-//                                                 +-------------+
-//                                                       |
-//                                                       | fb_clk (12.5 MHz)
-//                                                       v
-//                                            [ Primary Output: fb_clk ]
-//                                                       |
-//                                                       +---> Feedback to BBPD
-//                                                       +---> Feedback to Loop Filter (AFC)
+//   ref_clk (12.5 MHz Reference)                                                       fb_clk (12.5 MHz Feedback)
+//      |           +-----------------------------------------------------------------------+          |
+//      +---------->|             DUAL-STAGE DIGITAL LOOP FILTER (loop_filter.v)            |<---------+ (AFC Edge Clock)
+//      |           |                                                                       |          |
+//      |           | [STAGE 1: AFC Coarse Frequency Acquisition]                           |          |
+//      |           | - Window counter on ref_clk (WINDOW = 200 cycles)                     |          |
+//      |           | - Edge counter clocked on fb_clk (fb_edge_cnt)                        |          |
+//      |           | - Frequency error: freq_err = 200 - diff_latched                      |          |
+//      |           | - Fast coarse jumps: otw <= otw + (freq_err * 50)                     |          |
+//      |           |                            |                                          |          |
+//      |           |                            v (Handoff: |freq_err| <= 1)               |          |
+//      |           |                            | (freq_locked = 1, freeze otw_base)       |          |
+//      |           |                            v                                          |          |
+//      |  up_dn -->| [STAGE 2: Bang-Bang PI Fine Tracking Loop]                            |          |
+//      | (1-bit)   | - Proportional Lead: fine_err = (up_dn ? +10 : -10)                   |          |
+//      |    ^      | - Integral Lag:     integrator <= integrator +/- 2                    |          |
+//      +----+----->| - Locked Tuning Word: otw = otw_base + integrator + fine_err          |          |
+//      |    |      | - Clocks PI accumulator on posedge ref_clk                            |          |
+//      |    |      +-----------------------------------------------------------------------+          |
+//      |    |                                  |                                                      |
+//      |    |                                  | otw[15:0] (16-bit Tuning Word)                       |
+//      |    |                                  v                                                      |
+//      |    |      +-----------------------------------------------------------------------+          |
+//      |    |      |                   DIGITAL DCO CORE (dco_digital.v)                    |          |
+//      |    |      |                                                                       |          |
+//      |    |      | - Coarse Tuning Bank: otw[15:13] (3-bit)                              |          |
+//      |    |      |   31-stage tapped delay line inverter MUX                             |          |
+//      |    |      |                                                                       |          |
+//      |    |      | - Fine Tuning Bank:   otw[12:0] (13-bit)                              |          |
+//      |    |      |   0.1 ps fine delay / capacitive varactor steps                       |          |
+//      |    |      +-----------------------------------------------------------------------+          |
+//      |    |                                  |                                                      |
+//      |    |                                  | clk_out (100 MHz Locked Clock)                       |
+//      |    |                                  +--------------------+------------------------> clk_out (100 MHz)
+//      |    |                                  |                    |                          [Pad uo_out[0]]
+//      |    |                                  |                    v                                 |
+//      |    |                                  |        +-----------------------+                     |
+//      |    |                                  |        | FEEDBACK CLOCK DIVIDER|                     |
+//      |    |                                  |        |    (clk_divider.v)    |                     |
+//      |    |                                  |        | - Integer divide: /8  |                     |
+//      |    |  up_dn (1-bit)                   |        | - 50% duty cycle      |                     |
+//      |    |                                  |        +-----------------------+                     |
+//      |    |                                  |                    |                                 |
+//      |    |                                  |                    | fb_clk (12.5 MHz)               |
+//      |  +-+------------------------+         |                    +---+--------------------> fb_clk (12.5 MHz)
+//      |  |   BBPD PHASE DETECTOR    |         |                    |   |                      [Pad uo_out[7]]
+//      |  |        (bbpd.v)          |         |                    |   |                             |
+//      |  |                          |         |                    |   +-----------------------------+
+//      +->| - Samples ~fb_clk on     |<--------+--------------------+
+//         |   posedge of ref_clk     |         fb_clk Feedback Bus
+//         +--------------------------+
 //
 // ----------------------------------------------------------------------------
 // 2. CONFIGURABLE DCO INTEGRATION MODES
