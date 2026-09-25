@@ -1,8 +1,9 @@
 # ==============================================================================
-# File: adpll.sdc
-# Project: All-Digital Phase-Locked Loop (ADPLL) - SCL 180nm C2S Node
-# Description: Synopsys Design Constraints (SDC) for Synthesis & STA (OpenSTA)
-#              Targeting SCL 180nm CMOS standard-cell library (C2S eChip Hub)
+# Organization: NUAT Labs (https://github.com/nuatlabs)
+# Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+# File:         adpll.sdc
+# Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+# Description:  Synopsys Design Constraints (SDC) for SCL 180nm CMOS
 # ==============================================================================
 
 # Set time unit: nanoseconds

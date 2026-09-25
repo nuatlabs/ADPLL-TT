@@ -2,9 +2,16 @@
 This file is used to generate your project datasheet on the Tiny Tapeout website.
 -->
 
+# NUAT-ADPLL: All-Digital Phase-Locked Loop
+
+**Author**: NUAT Labs ([github.com/nuatlabs](https://github.com/nuatlabs) | [admin@nuatlabs.com](mailto:admin@nuatlabs.com))  
+**Target Clock**: 12.5 MHz Reference Clock (`clk`) $\rightarrow$ 100 MHz Locked DCO Output (`uo_out[0]`) ($N = 8$)
+
+---
+
 ## How it works
 
-This project implements an **All-Digital Phase-Locked Loop (ADPLL)** that multiplies a 12.5 MHz reference clock up to a 100 MHz high-speed output clock ($N = 8$).
+The **NUAT-ADPLL** is a closed-loop frequency synthesizer constructed entirely from standard-cell digital logic. It multiplies a 12.5 MHz reference clock up to a 100 MHz locked output clock ($N = 8$).
 
 The loop architecture consists of:
 1. **Bang-Bang Phase Detector (BBPD)**: A digital flip-flop sampling the feedback clock on every reference clock rising edge (`up_dn = ~fb_clk`).
@@ -38,7 +45,7 @@ The loop architecture consists of:
 4. Monitor `uo_out[2]` (`freq_locked`):
    - At power-up, `freq_locked = 0` (coarse AFC acquisition active).
    - Within $\approx 160\text{ }\mu\text{s}$ (3 measurement windows), `freq_locked` transitions to `1`.
-5. Connect an oscilloscope or spectrum analyzer to `uo_out[0]` (`clk_out`) to measure the locked 100 MHz clock.
+5. Connect an oscilloscope to `uo_out[0]` (`clk_out`) to measure the locked 100 MHz clock.
 6. Connect a logic analyzer to `uo_out[7:4]` and `uio_out[7:0]` to observe the 12-bit real-time `otw[15:4]` settling trajectory.
 
 ---

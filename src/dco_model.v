@@ -1,9 +1,10 @@
 // ============================================================================
-// File: dco_model.v
-// Module: dco_model
-// Project: All-Digital Phase-Locked Loop (ADPLL) - SCL 180nm C2S Node
-//
-// DESCRIPTION:
+// Organization: NUAT Labs (https://github.com/nuatlabs)
+// Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+// Module:       dco_model
+// Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+// License:      Apache-2.0 / MIT
+// ============================================================================
 // Digitally Controlled Oscillator behavioral simulation model.
 // Scaled for 180nm CMOS node: 100 MHz target center frequency.
 // ============================================================================

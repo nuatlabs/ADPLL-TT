@@ -1,9 +1,10 @@
-// -----------------------------------------------------------------------
-// dco_ring_structural.v -- Structural Standard-Cell / FPGA Ring Oscillator DCO
-//
-// This module demonstrates the physical gate-level architecture of a
-// Digitally Controlled Ring Oscillator (DCRO) for ASIC standard-cell or FPGA:
-//
+// ============================================================================
+// Organization: NUAT Labs (https://github.com/nuatlabs)
+// Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+// Module:       dco_ring_structural
+// Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+// License:      Apache-2.0 / MIT
+// ============================================================================
 // 1. Enable / Oscillation Control:
 //    An initial NAND2 gate (osc_en & feedback) allows clean startup and shutdown.
 //

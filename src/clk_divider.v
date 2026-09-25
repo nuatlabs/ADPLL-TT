@@ -1,9 +1,10 @@
 // ============================================================================
-// File: clk_divider.v
-// Module: clk_divider
-// Project: All-Digital Phase-Locked Loop (ADPLL)
-//
-// DESCRIPTION:
+// Organization: NUAT Labs (https://github.com/nuatlabs)
+// Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+// Module:       clk_divider
+// Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+// License:      Apache-2.0 / MIT
+// ============================================================================
 // Programmable Integer Feedback Clock Divider (/N).
 //
 // ----------------------------------------------------------------------------

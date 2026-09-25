@@ -1,8 +1,9 @@
 # ==============================================================================
-# File: synth.ys
-# Project: All-Digital Phase-Locked Loop (ADPLL)
-# Tool: Yosys Open-Source Synthesis Suite
-# Description: Synthesis script for adpll_digital_top
+# Organization: NUAT Labs (https://github.com/nuatlabs)
+# Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+# File:         synth.ys
+# Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+# Description:  Yosys Open-Source Synthesis Script for NUAT ADPLL
 # ==============================================================================
 
 # Read Verilog source files

@@ -1,9 +1,10 @@
 // ============================================================================
-// File: tb_adpll_digital.v
-// Module: tb_adpll_digital
-// Project: All-Digital Phase-Locked Loop (ADPLL) - SCL 180nm C2S Node
-//
-// DESCRIPTION:
+// Organization: NUAT Labs (https://github.com/nuatlabs)
+// Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+// Module:       tb_adpll_digital
+// Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+// License:      Apache-2.0 / MIT
+// ============================================================================
 // Testbench for verifying adpll_digital_top scaled for 180nm CMOS:
 // - Reference Clock: 12.5 MHz (Period = 80.0 ns = 80,000 ps)
 // - Feedback Divider: N = 8

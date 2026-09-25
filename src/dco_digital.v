@@ -1,9 +1,10 @@
 // ============================================================================
-// File: dco_digital.v
-// Module: dco_digital
-// Project: All-Digital Phase-Locked Loop (ADPLL) - SCL 180nm C2S Node
-//
-// DESCRIPTION:
+// Organization: NUAT Labs (https://github.com/nuatlabs)
+// Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+// Module:       dco_digital
+// Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+// License:      Apache-2.0 / MIT
+// ============================================================================
 // Synthesizable Digitally Controlled Oscillator (DCO) Component.
 // Scaled for the 180 nm CMOS standard-cell node (C2S eChip Hub initiative).
 //

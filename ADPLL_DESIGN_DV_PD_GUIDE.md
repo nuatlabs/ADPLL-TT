@@ -1,8 +1,9 @@
-# All-Digital Phase-Locked Loop (ADPLL): SCL 180nm C2S eChip Hub Architecture, DV, and Physical Design Guide
+# NUAT Labs: All-Digital Phase-Locked Loop (ADPLL) Architecture, DV & Physical Design Guide
 
-This guide provides an expert-level technical reference and execution guide for the All-Digital Phase-Locked Loop (ADPLL) scaled specifically for the **180 nm CMOS standard-cell node** under the **C2S (Chips to Startup) initiative / eChip Hub (MeitY, Government of India)**.
-
-All mathematical formulations in this document are rendered in standard, human-readable ASCII notation for clean visualization across any editor or markdown viewer.
+**Author**: NUAT Labs Engineering Team ([admin@nuatlabs.com](mailto:admin@nuatlabs.com))  
+**Organization**: NUAT Labs ([github.com/nuatlabs](https://github.com/nuatlabs))  
+**Target Node**: SCL 180nm CMOS (C2S eChip Hub, MeitY) / IHP 130nm (Tiny Tapeout)  
+**License**: Apache-2.0 / MIT
 
 ---
 

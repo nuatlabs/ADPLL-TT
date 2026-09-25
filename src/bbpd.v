@@ -1,9 +1,10 @@
 // ============================================================================
-// File: bbpd.v
-// Module: bbpd
-// Project: All-Digital Phase-Locked Loop (ADPLL)
-//
-// DESCRIPTION:
+// Organization: NUAT Labs (https://github.com/nuatlabs)
+// Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+// Module:       bbpd
+// Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+// License:      Apache-2.0 / MIT
+// ============================================================================
 // Bang-Bang Phase Detector (BBPD), also known as an Alexander Phase Detector.
 //
 // ----------------------------------------------------------------------------

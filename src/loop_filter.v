@@ -1,9 +1,10 @@
 // ============================================================================
-// File: loop_filter.v
-// Module: loop_filter
-// Project: All-Digital Phase-Locked Loop (ADPLL)
-//
-// DESCRIPTION:
+// Organization: NUAT Labs (https://github.com/nuatlabs)
+// Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+// Module:       loop_filter
+// Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+// License:      Apache-2.0 / MIT
+// ============================================================================
 // Dual-Stage Digital Loop Filter (Coarse AFC + Fine Bang-Bang PI Tracking).
 //
 // ----------------------------------------------------------------------------

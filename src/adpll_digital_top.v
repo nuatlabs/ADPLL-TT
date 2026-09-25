@@ -1,13 +1,10 @@
 // ============================================================================
-// File: adpll_digital_top.v
-// Module: adpll_digital_top
-// Project: All-Digital Phase-Locked Loop (ADPLL) - SCL 180nm C2S Node
-//
-// DESCRIPTION:
-// Top-level All-Digital Phase-Locked Loop (ADPLL) architecture.
-// Scaled for the 180 nm CMOS standard-cell node (C2S eChip Hub initiative).
-//
-// ----------------------------------------------------------------------------
+// Organization: NUAT Labs (https://github.com/nuatlabs)
+// Project:      NUAT All-Digital Phase-Locked Loop (ADPLL) Silicon IP
+// Module:       adpll_digital_top
+// Author:       NUAT Labs Engineering Team (admin@nuatlabs.com)
+// License:      Apache-2.0 / MIT
+// ============================================================================
 // 1. ARCHITECTURAL OVERVIEW (180 nm SCL NODE)
 // ----------------------------------------------------------------------------
 // This module integrates the complete ADPLL feedback loop:

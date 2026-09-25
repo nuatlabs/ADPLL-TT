@@ -1,9 +1,9 @@
 # Tiny Tapeout project information
 project:
-  title:        "All-Digital Phase-Locked Loop (ADPLL)"
+  title:        "NUAT-ADPLL"
   author:       "NUAT Labs"
   discord:      ""
-  description:  "All-Digital PLL with dual-stage AFC and Bang-Bang PI filter"
+  description:  "NUAT Labs All-Digital PLL with dual-stage AFC and Bang-Bang PI filter"
   language:     "Verilog"
   clock_hz:     12500000
 
